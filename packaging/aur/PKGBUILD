@@ -1,0 +1,25 @@
+# Maintainer: Wasylq <wasylq@protonmail.com>
+pkgname=msd
+pkgver=VERSION
+pkgrel=1
+pkgdesc='Multi Site Downloader - download albums from file-hosting sites'
+arch=('x86_64' 'aarch64')
+url='https://github.com/Wasylq/MSD'
+license=('GPL-3.0-only')
+depends=('glibc')
+makedepends=('go')
+source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cd "MSD-${pkgver}"
+    export CGO_ENABLED=0
+    go build \
+        -ldflags "-s -w -X main.version=v${pkgver} -X main.commit=aur -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        -o "${pkgname}" ./cmd/msd/
+}
+
+package() {
+    cd "MSD-${pkgver}"
+    install -Dm755 "${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
+}
