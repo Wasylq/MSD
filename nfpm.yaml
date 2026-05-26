@@ -1,0 +1,12 @@
+name: msd
+arch: ${GOARCH}
+platform: linux
+version: ${VERSION}
+maintainer: Wasylq <wasylq@protonmail.com>
+description: Multi Site Downloader - allows downloading from many aggregating sites
+vendor: Wasylq
+homepage: https://github.com/Wasylq/MSD
+license: GPL-3.0-only
+contents:
+  - src: dist/msd
+    dst: /usr/bin/msd

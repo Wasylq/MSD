@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build ./...
+
+      - name: Install gotestsum
+        # Pinned so the test-output.txt grep in the coverage-summary step
+        # doesn't break on a silent format change. Bump together with the
+        # govulncheck pin in the vulncheck job.
+        run: go install gotest.tools/gotestsum@v1.13.0
+
+      - name: Test with coverage
+        run: gotestsum --junitfile junit.xml -- -race -count=1 -coverprofile=coverage.out -covermode=atomic ./... 2>&1 | tee test-output.txt
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v6
+        with:
+          files: coverage.out
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          total=$(go tool cover -func=coverage.out | tail -1 | awk '{print $NF}')
+
+          {
+            echo "## Test Results"
+            echo ""
+            echo "**Total coverage: ${total}**"
+            echo ""
+            echo "| Package | Coverage |"
+            echo "|---------|----------|"
+            grep 'coverage:' test-output.txt | sed 's/ok  \t//' | while IFS=$'\t' read -r pkg _ cov; do
+              cov=$(echo "$cov" | sed 's/coverage: //' | sed 's/ of statements//')
+              echo "| \`${pkg}\` | ${cov} |"
+            done
+            grep '\[no test files\]' test-output.txt | sed 's/\?\s*\t//' | while IFS=$'\t' read -r pkg _; do
+              echo "| \`${pkg}\` | — |"
+            done
+          } >> $GITHUB_STEP_SUMMARY
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run go vet (integration build tag)
+        # Static-only — compiles the integration_test.go files (gated by
+        # `//go:build integration`) and runs vet checks against them. This
+        # is NOT `go test`; nothing executes and no network traffic happens,
+        # so it's safe to run on shared GitHub runners even though live
+        # integration tests are blocked by site-side WAFs.
+        # Without this, broken integration test code (typos, undefined
+        # symbols, stale testutil signatures) stays invisible until a
+        # contributor runs `make smoke` locally.
+        run: go vet -tags=integration ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.11.4
+          args: --timeout=5m
+
+      - name: Check Dockerfile GO_VERSION matches go.mod
+        # CI builds pass GO_VERSION dynamically from go.mod via
+        # scripts/go-version.sh, but the Dockerfile's ARG default is the
+        # fallback for naive `docker build .` runs locally. Keep them in
+        # sync — bump both when bumping the Go toolchain.
+        run: |
+          gomod_ver=$(./scripts/go-version.sh)
+          dockerfile_ver=$(awk -F= '/^ARG GO_VERSION=/ { print $2; exit }' Dockerfile)
+          if [ "$gomod_ver" != "$dockerfile_ver" ]; then
+            echo "::error::go.mod says Go $gomod_ver but Dockerfile default ARG GO_VERSION=$dockerfile_ver."
+            echo "::error::Edit Dockerfile so the ARG GO_VERSION default matches go.mod."
+            exit 1
+          fi
+          echo "OK: Dockerfile GO_VERSION=$dockerfile_ver matches go.mod"
+
+  # Vulncheck is intentionally informational and is NOT gated on release.
+  # The Go vulnerability database reports findings for older Go *toolchains*
+  # as well as third-party deps, so a "fail on any finding" policy would
+  # require bumping go.mod / the Go toolchain on every new Go point release
+  # to keep the pipeline green. We prefer to see findings as warnings and
+  # decide deliberately when to upgrade.
+  vulncheck:
+    name: Vulncheck (informational)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.3.0
+
+      - name: Run govulncheck
+        run: govulncheck ./... || echo "::warning::govulncheck found vulnerabilities (see above)"
+
+  # Cross-build deliberately omits linux/amd64: the `test` job above runs on
+  # ubuntu-latest (linux/amd64) and does `go build ./...` natively before
+  # tests, so the native build is already gated. This matrix exists only to
+  # catch breakage in *cross-compilation* for the other platforms shipped by
+  # release.yml (which builds all five platforms, including linux/amd64).
+  cross-build:
+    name: Cross-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          binary="msd"
+          if [ "$GOOS" = "windows" ]; then binary="msd.exe"; fi
+          go build -o "$binary" ./cmd/msd/
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
