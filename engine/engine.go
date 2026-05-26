@@ -43,7 +43,10 @@ func (e *Engine) progress() ProgressReporter {
 }
 
 func (e *Engine) Download(ctx context.Context, s site.Site, album *site.Album) error {
-	dir := filepath.Join(e.OutputDir, fsutil.SanitizePath(album.Name))
+	dir := e.OutputDir
+	if album.Name != "" {
+		dir = filepath.Join(dir, fsutil.SanitizePath(album.Name))
+	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}

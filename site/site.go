@@ -14,6 +14,10 @@ var (
 	ErrNotFound     = errors.New("album or file not found")
 )
 
+func IsNotFound(err error) bool     { return errors.Is(err, ErrNotFound) }
+func IsAuthRequired(err error) bool { return errors.Is(err, ErrAuthRequired) }
+func IsRateLimited(err error) bool  { return errors.Is(err, ErrRateLimited) }
+
 type File struct {
 	ID   string
 	Name string

@@ -1,0 +1,20 @@
+# MSD configuration file.
+# Place at: ~/.config/msd/config.yaml (Linux)
+#           ~/Library/Application Support/msd/config.yaml (macOS)
+#           %APPDATA%\msd\config.yaml (Windows)
+#
+# All values are optional — CLI flags and environment variables take precedence.
+
+# Default download directory. CLI: -o / --output. Env: MSD_DOWNLOAD_DIR.
+# download_dir: .
+
+# Default max concurrent downloads. CLI: -c / --concurrency. Env: MSD_CONCURRENCY.
+# Falls back to the site handler's default if not set (e.g. pixeldrain: 5).
+# concurrency: 5
+
+# Default delay between requests (Go duration string).
+# CLI: --request-delay. Falls back to site handler's default if not set.
+# request_delay: 0s
+
+# Don't attempt to resume partial (.part) downloads. CLI: --no-resume.
+# no_resume: false
