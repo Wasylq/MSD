@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Test Album | filester.me</title></head>
+<body>
+<div class="container">
+  <main class="main-content">
+    <div class="folder-header">
+      <h1 class="folder-title">Test Album</h1>
+      <div class="folder-meta">
+        <span>3 files</span>
+        <span>500 MB</span>
+      </div>
+    </div>
+    <div class="files-list" id="filesGrid">
+      <div class="file-item"
+           data-name="photo1.jpg"
+           data-size="1048576"
+           data-date="2026-01-01T00:00:00Z"
+           onclick="window.location.href='/d/abc123'">
+        <div class="file-info">
+          <div class="file-name">photo1.jpg</div>
+          <div class="file-meta">1.00 MB</div>
+        </div>
+      </div>
+      <div class="file-item"
+           data-name="video.mp4"
+           data-size="524288000"
+           data-date="2026-01-02T00:00:00Z"
+           onclick="window.location.href='/d/def456'">
+        <div class="file-info">
+          <div class="file-name">video.mp4</div>
+          <div class="file-meta">500.00 MB</div>
+        </div>
+      </div>
+    </div>
+    <a href="?page=2">Next</a>
+  </main>
+</div>
+</body>
+</html>
