@@ -49,6 +49,10 @@ func TestEngine_Download_BasicAlbum(t *testing.T) {
 	album := &site.Album{
 		ID:   "test-album",
 		Name: "Test Album",
+		PostLinks: []string{
+			"https://example.test/post/1",
+			"https://example.test/post/2",
+		},
 		Files: []site.File{
 			{ID: "a", Name: "a.txt", Size: int64(len(files["a"]))},
 			{ID: "b", Name: "b.txt", Size: int64(len(files["b"]))},
@@ -71,6 +75,14 @@ func TestEngine_Download_BasicAlbum(t *testing.T) {
 		if string(data) != files[id] {
 			t.Errorf("%s content = %q, want %q", f, data, files[id])
 		}
+	}
+	postLinks, err := os.ReadFile(filepath.Join(albumDir, "post-links.txt"))
+	if err != nil {
+		t.Fatalf("read post-links.txt: %v", err)
+	}
+	wantPostLinks := "https://example.test/post/1\nhttps://example.test/post/2\n"
+	if string(postLinks) != wantPostLinks {
+		t.Errorf("post-links.txt = %q, want %q", postLinks, wantPostLinks)
 	}
 
 	if !pr.albumDone.Load() {

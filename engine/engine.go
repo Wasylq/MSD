@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -49,6 +50,9 @@ func (e *Engine) Download(ctx context.Context, s site.Site, album *site.Album) e
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
+	}
+	if err := writePostLinks(dir, album.PostLinks); err != nil {
+		return fmt.Errorf("write post links: %w", err)
 	}
 
 	concurrency := e.Concurrency
@@ -107,4 +111,11 @@ func (e *Engine) Download(ctx context.Context, s site.Site, album *site.Album) e
 		return fmt.Errorf("%d of %d files failed to download", failed.Load(), len(album.Files))
 	}
 	return nil
+}
+
+func writePostLinks(dir string, links []string) error {
+	if len(links) == 0 {
+		return nil
+	}
+	return os.WriteFile(filepath.Join(dir, "post-links.txt"), []byte(strings.Join(links, "\n")+"\n"), 0o644)
 }

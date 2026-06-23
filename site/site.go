@@ -25,9 +25,10 @@ type File struct {
 }
 
 type Album struct {
-	ID    string
-	Name  string
-	Files []File
+	ID        string
+	Name      string
+	Files     []File
+	PostLinks []string
 }
 
 type DownloadRequest struct {
