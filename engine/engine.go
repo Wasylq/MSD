@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -93,6 +94,7 @@ func (e *Engine) Download(ctx context.Context, s site.Site, album *site.Album) e
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
 					failed.Add(1)
+					log.Printf("file failed: %s: %v", file.Name, err)
 				}
 				return nil
 			}

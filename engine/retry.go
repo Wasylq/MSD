@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"log"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -31,11 +32,15 @@ func (rp RetryPolicy) Do(ctx context.Context, fn func() error) error {
 		if lastErr == nil {
 			return nil
 		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if !IsRetryable(lastErr) {
 			return lastErr
 		}
 		if attempt < rp.MaxRetries {
 			delay := rp.backoff(attempt, lastErr)
+			log.Printf("retryable error on attempt %d/%d: %v; retrying in %s", attempt+1, rp.MaxRetries+1, lastErr, delay.Round(time.Millisecond))
 			select {
 			case <-ctx.Done():
 				return ctx.Err()

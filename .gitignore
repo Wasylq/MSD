@@ -7,8 +7,8 @@
 *.dll
 *.so
 *.dylib
-msd
-MSD
+/msd
+/MSD
 PLAN.md
 
 # Scrape output files
