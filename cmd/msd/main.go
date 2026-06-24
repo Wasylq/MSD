@@ -224,7 +224,7 @@ func mapSiteError(err error) error {
 	case site.IsNotFound(err):
 		return fmt.Errorf("album or file not found — check the URL")
 	case site.IsAuthRequired(err):
-		return fmt.Errorf("authentication required — try --password")
+		return fmt.Errorf("authentication required — try --password for protected albums or configure site credentials: %w", err)
 	case site.IsRateLimited(err):
 		return fmt.Errorf("rate limited by site — try again later")
 	default:
