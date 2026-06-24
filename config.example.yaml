@@ -18,3 +18,18 @@
 
 # Don't attempt to resume partial (.part) downloads. CLI: --no-resume.
 # no_resume: false
+
+# Site credentials are intentionally read from environment variables instead of
+# this file so tokens are less likely to be committed by accident.
+#
+# Gofile:
+#   MSD_GOFILE_TOKEN=...  Preferred account token variable.
+#   GOFILE_TOKEN=...      Alternate account token variable.
+#
+# Live Gofile currently rate-limits or restricts some guest access, and that can
+# be IP/environment-specific. Set a token before running downloads or integration
+# tests for content that requires an account.
+
+# Site-specific CLI flags:
+#   --kemono-thumbnails   Download Kemono/Pawchive thumbnails instead of full
+#                         attachment files.
