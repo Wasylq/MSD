@@ -88,8 +88,5 @@ func IsRetryable(err error) bool {
 		return httpErr.StatusCode == http.StatusTooManyRequests || httpErr.StatusCode >= 500
 	}
 	var netErr net.Error
-	if errors.As(err, &netErr) {
-		return true
-	}
-	return false
+	return errors.As(err, &netErr)
 }

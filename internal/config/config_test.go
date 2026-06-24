@@ -33,11 +33,15 @@ func TestLoad_NoConfigFile(t *testing.T) {
 func TestLoad_ConfigFile(t *testing.T) {
 	dir := t.TempDir()
 	configDir := filepath.Join(dir, "msd")
-	os.MkdirAll(configDir, 0o755)
-	os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(`
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatalf("create config dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(`
 download_dir: /tmp/downloads
 concurrency: 8
-`), 0o644)
+`), 0o644); err != nil {
+		t.Fatalf("write config file: %v", err)
+	}
 
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("MSD_DOWNLOAD_DIR", "")
@@ -58,11 +62,15 @@ concurrency: 8
 func TestLoad_EnvOverridesFile(t *testing.T) {
 	dir := t.TempDir()
 	configDir := filepath.Join(dir, "msd")
-	os.MkdirAll(configDir, 0o755)
-	os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(`
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatalf("create config dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(`
 download_dir: /tmp/from-file
 concurrency: 4
-`), 0o644)
+`), 0o644); err != nil {
+		t.Fatalf("write config file: %v", err)
+	}
 
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("MSD_DOWNLOAD_DIR", "/tmp/from-env")

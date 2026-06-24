@@ -42,7 +42,7 @@ func serveFixture(path string) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html")
-		w.Write(data)
+		_, _ = w.Write(data)
 	}
 }
 
@@ -53,9 +53,12 @@ func TestResolve_SinglePage(t *testing.T) {
 			return
 		}
 		// Serve page2 fixture (no pagination link) for any page request
-		data, _ := os.ReadFile("testdata/album_page2.html")
+		data, err := os.ReadFile("testdata/album_page2.html")
+		if err != nil {
+			t.Fatalf("read fixture: %v", err)
+		}
 		w.Header().Set("Content-Type", "text/html")
-		w.Write(data)
+		_, _ = w.Write(data)
 	}))
 	defer ts.Close()
 
@@ -96,9 +99,12 @@ func TestResolve_Pagination(t *testing.T) {
 		default:
 			fixture = "testdata/album_page2.html"
 		}
-		data, _ := os.ReadFile(fixture)
+		data, err := os.ReadFile(fixture)
+		if err != nil {
+			t.Fatalf("read fixture: %v", err)
+		}
 		w.Header().Set("Content-Type", "text/html")
-		w.Write(data)
+		_, _ = w.Write(data)
 	}))
 	defer ts.Close()
 
@@ -197,16 +203,20 @@ func TestDownloadRequest(t *testing.T) {
 		}
 
 		var body map[string]string
-		json.NewDecoder(r.Body).Decode(&body)
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
 		if body["file_slug"] != "abc123" {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"success":  true,
 			"view_url": "/v/token123",
-		})
+		}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -228,9 +238,11 @@ func TestDownloadRequest(t *testing.T) {
 
 func TestDownloadRequest_APIError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"success": false,
-		})
+		}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 

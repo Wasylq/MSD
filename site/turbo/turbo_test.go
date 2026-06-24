@@ -42,7 +42,7 @@ func TestResolveAlbum(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`
+		_, _ = w.Write([]byte(`
 			<html>
 				<head><title>Testing - turbo.cr</title></head>
 				<body>
@@ -84,7 +84,7 @@ func TestResolveAlbum(t *testing.T) {
 
 func TestResolveAlbum_Empty(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("<html><body><h1>Empty</h1></body></html>"))
+		_, _ = w.Write([]byte("<html><body><h1>Empty</h1></body></html>"))
 	}))
 	defer ts.Close()
 

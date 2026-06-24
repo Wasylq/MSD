@@ -24,7 +24,7 @@ func newMultiFileServer(files map[string]string) *httptest.Server {
 			return
 		}
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
-		w.Write([]byte(data))
+		_, _ = w.Write([]byte(data))
 	}))
 }
 
@@ -110,7 +110,7 @@ func TestEngine_Download_ConcurrencyLimit(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 		concurrent.Add(-1)
 		w.Header().Set("Content-Length", "5")
-		w.Write([]byte("hello"))
+		_, _ = w.Write([]byte("hello"))
 	}))
 	defer ts.Close()
 
@@ -156,7 +156,7 @@ func TestEngine_Download_UsesSiteDefaultConcurrency(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 		concurrent.Add(-1)
 		w.Header().Set("Content-Length", "5")
-		w.Write([]byte("hello"))
+		_, _ = w.Write([]byte("hello"))
 	}))
 	defer ts.Close()
 
@@ -235,7 +235,7 @@ func TestEngine_Download_PartialFailure(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Length", "4")
-		w.Write([]byte("good"))
+		_, _ = w.Write([]byte("good"))
 	}))
 	defer ts.Close()
 
@@ -285,7 +285,7 @@ func TestEngine_Download_PartialFailure(t *testing.T) {
 func TestEngine_Download_ContextCancellation(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(5 * time.Second)
-		w.Write([]byte("slow"))
+		_, _ = w.Write([]byte("slow"))
 	}))
 	defer ts.Close()
 

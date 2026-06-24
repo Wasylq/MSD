@@ -47,7 +47,7 @@ func TestResolveAlbum(t *testing.T) {
 			t.Errorf("advanced query = %q, want 1", r.URL.Query().Get("advanced"))
 		}
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`
+		_, _ = w.Write([]byte(`
 			<html>
 				<head><title>Christine/ Mysexylegs | Bunkr</title></head>
 				<body>
@@ -103,7 +103,7 @@ func TestResolveAlbum(t *testing.T) {
 
 func TestResolveAlbum_Empty(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("<html><body><h1>Empty</h1></body></html>"))
+		_, _ = w.Write([]byte("<html><body><h1>Empty</h1></body></html>"))
 	}))
 	defer ts.Close()
 
@@ -123,10 +123,10 @@ func TestResolveFile(t *testing.T) {
 			http.NotFound(w, r)
 			return
 		}
-		w.Write([]byte(`
-			<html>
-				<head><title>34.mp4 | Bunkr</title></head>
-				<body>
+		_, _ = w.Write([]byte(`
+				<html>
+					<head><title>34.mp4 | Bunkr</title></head>
+					<body>
 					<h1>34.mp4</h1>
 					<div id="fileTracker" data-file-id="57087394"></div>
 				</body>
@@ -245,20 +245,24 @@ func bunkrAPIServer(t *testing.T) *httptest.Server {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			json.NewEncoder(w).Encode(bridgeResponse{
+			if err := json.NewEncoder(w).Encode(bridgeResponse{
 				MediaFiles: "https://c2ck-b.cdn.cr",
 				Path:       "/storage/media/b00459db-b71a-472e-a89f-b9ba94264355.mp4",
 				Original:   "34.mp4",
-			})
+			}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 		case "/sign":
 			if r.URL.Query().Get("path") != "/storage/media/b00459db-b71a-472e-a89f-b9ba94264355.mp4" {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			json.NewEncoder(w).Encode(signResponse{
+			if err := json.NewEncoder(w).Encode(signResponse{
 				Token: "signed-token",
 				Ex:    1782341509,
-			})
+			}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 		default:
 			http.NotFound(w, r)
 		}

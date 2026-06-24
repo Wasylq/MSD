@@ -82,7 +82,7 @@ func (f *Filester) parsePage(ctx context.Context, pageURL string) (string, []sit
 	if err != nil {
 		return "", nil, false, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -175,7 +175,7 @@ func (f *Filester) DownloadRequest(ctx context.Context, file site.File) (*site.D
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return nil, fmt.Errorf("filester: %w", site.ErrRateLimited)
@@ -204,7 +204,7 @@ func (f *Filester) DownloadRequest(ctx context.Context, file site.File) (*site.D
 	}, nil
 }
 
-func (f *Filester) DefaultConcurrency() int            { return 3 }
+func (f *Filester) DefaultConcurrency() int             { return 3 }
 func (f *Filester) DefaultResolveDelay() time.Duration  { return 5 * time.Second }
 func (f *Filester) DefaultDownloadDelay() time.Duration { return 0 }
 

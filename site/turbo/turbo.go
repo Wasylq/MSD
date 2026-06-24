@@ -62,7 +62,7 @@ func (t *Turbo) resolveAlbum(ctx context.Context, id string) (*site.Album, error
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -194,7 +194,7 @@ func (t *Turbo) sign(ctx context.Context, id string) (*signResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:

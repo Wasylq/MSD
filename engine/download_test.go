@@ -28,7 +28,7 @@ func newTestServer(content map[string]string) *httptest.Server {
 		rangeHeader := r.Header.Get("Range")
 		if rangeHeader != "" {
 			var start int64
-			fmt.Sscanf(rangeHeader, "bytes=%d-", &start)
+			_, _ = fmt.Sscanf(rangeHeader, "bytes=%d-", &start)
 			if start >= int64(len(data)) {
 				w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
 				return
@@ -36,12 +36,12 @@ func newTestServer(content map[string]string) *httptest.Server {
 			w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, len(data)-1, len(data)))
 			w.Header().Set("Content-Length", fmt.Sprintf("%d", int64(len(data))-start))
 			w.WriteHeader(http.StatusPartialContent)
-			w.Write([]byte(data[start:]))
+			_, _ = w.Write([]byte(data[start:]))
 			return
 		}
 
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
-		w.Write([]byte(data))
+		_, _ = w.Write([]byte(data))
 	}))
 }
 
@@ -52,12 +52,12 @@ type mockSite struct {
 	dlReqErr      error
 }
 
-func (m *mockSite) Name() string                                        { return "mock" }
-func (m *mockSite) Match(string) bool                                   { return true }
+func (m *mockSite) Name() string                                                 { return "mock" }
+func (m *mockSite) Match(string) bool                                            { return true }
 func (m *mockSite) Resolve(context.Context, string, string) (*site.Album, error) { return nil, nil }
-func (m *mockSite) DefaultConcurrency() int                             { return m.concurrency }
-func (m *mockSite) DefaultResolveDelay() time.Duration                  { return 0 }
-func (m *mockSite) DefaultDownloadDelay() time.Duration                 { return m.downloadDelay }
+func (m *mockSite) DefaultConcurrency() int                                      { return m.concurrency }
+func (m *mockSite) DefaultResolveDelay() time.Duration                           { return 0 }
+func (m *mockSite) DefaultDownloadDelay() time.Duration                          { return m.downloadDelay }
 
 func (m *mockSite) DownloadRequest(_ context.Context, file site.File) (*site.DownloadRequest, error) {
 	if m.dlReqErr != nil {
@@ -106,7 +106,9 @@ func TestDownloadFile_SkipsCompleted(t *testing.T) {
 
 	dir := t.TempDir()
 	destPath := filepath.Join(dir, "test.txt")
-	os.WriteFile(destPath, []byte("hello world"), 0o644)
+	if err := os.WriteFile(destPath, []byte("hello world"), 0o644); err != nil {
+		t.Fatalf("write existing file: %v", err)
+	}
 
 	requestCount := 0
 	origHandler := ts.Config.Handler
@@ -134,7 +136,9 @@ func TestDownloadFile_SkipsCompleted(t *testing.T) {
 func TestDownloadFile_SkipsUnknownSizeIfExists(t *testing.T) {
 	dir := t.TempDir()
 	destPath := filepath.Join(dir, "test.txt")
-	os.WriteFile(destPath, []byte("existing content"), 0o644)
+	if err := os.WriteFile(destPath, []byte("existing content"), 0o644); err != nil {
+		t.Fatalf("write existing file: %v", err)
+	}
 
 	e := &Engine{
 		Retry:    RetryPolicy{MaxRetries: 0, BaseDelay: time.Millisecond},
@@ -147,7 +151,10 @@ func TestDownloadFile_SkipsUnknownSizeIfExists(t *testing.T) {
 		t.Fatalf("downloadFile: %v", err)
 	}
 
-	got, _ := os.ReadFile(destPath)
+	got, err := os.ReadFile(destPath)
+	if err != nil {
+		t.Fatalf("read result: %v", err)
+	}
 	if string(got) != "existing content" {
 		t.Errorf("file content changed; expected skip")
 	}
@@ -160,7 +167,9 @@ func TestDownloadFile_Resume(t *testing.T) {
 
 	dir := t.TempDir()
 	partPath := filepath.Join(dir, "test.txt.part")
-	os.WriteFile(partPath, []byte("hello"), 0o644)
+	if err := os.WriteFile(partPath, []byte("hello"), 0o644); err != nil {
+		t.Fatalf("write part file: %v", err)
+	}
 
 	e := &Engine{
 		Retry:    RetryPolicy{MaxRetries: 0, BaseDelay: time.Millisecond},
@@ -189,7 +198,9 @@ func TestDownloadFile_NoResumeFlag(t *testing.T) {
 
 	dir := t.TempDir()
 	partPath := filepath.Join(dir, "test.txt.part")
-	os.WriteFile(partPath, []byte("hello"), 0o644)
+	if err := os.WriteFile(partPath, []byte("hello"), 0o644); err != nil {
+		t.Fatalf("write part file: %v", err)
+	}
 
 	e := &Engine{
 		Retry:    RetryPolicy{MaxRetries: 0, BaseDelay: time.Millisecond},
@@ -203,7 +214,10 @@ func TestDownloadFile_NoResumeFlag(t *testing.T) {
 		t.Fatalf("downloadFile: %v", err)
 	}
 
-	got, _ := os.ReadFile(filepath.Join(dir, "test.txt"))
+	got, err := os.ReadFile(filepath.Join(dir, "test.txt"))
+	if err != nil {
+		t.Fatalf("read result: %v", err)
+	}
 	if string(got) != "hello world" {
 		t.Errorf("content = %q, want %q", got, "hello world")
 	}
@@ -217,7 +231,9 @@ func TestDownloadFile_RangeNotSatisfiable(t *testing.T) {
 	dir := t.TempDir()
 	// .part file larger than actual content — triggers 416
 	partPath := filepath.Join(dir, "test.txt.part")
-	os.WriteFile(partPath, []byte("hello world plus extra garbage"), 0o644)
+	if err := os.WriteFile(partPath, []byte("hello world plus extra garbage"), 0o644); err != nil {
+		t.Fatalf("write part file: %v", err)
+	}
 
 	e := &Engine{
 		Retry:    RetryPolicy{MaxRetries: 1, BaseDelay: time.Millisecond},
@@ -230,7 +246,10 @@ func TestDownloadFile_RangeNotSatisfiable(t *testing.T) {
 		t.Fatalf("downloadFile: %v", err)
 	}
 
-	got, _ := os.ReadFile(filepath.Join(dir, "test.txt"))
+	got, err := os.ReadFile(filepath.Join(dir, "test.txt"))
+	if err != nil {
+		t.Fatalf("read result: %v", err)
+	}
 	if string(got) != "hello world" {
 		t.Errorf("content = %q, want %q", got, "hello world")
 	}
@@ -286,7 +305,7 @@ func TestDownloadFile_ContextCancellation(t *testing.T) {
 			case <-r.Context().Done():
 				return
 			default:
-				w.Write([]byte(strings.Repeat("x", 1000)))
+				_, _ = w.Write([]byte(strings.Repeat("x", 1000)))
 				w.(http.Flusher).Flush()
 				time.Sleep(time.Millisecond)
 			}
@@ -361,7 +380,7 @@ type recordingReporter struct {
 	lastErr error
 }
 
-func (r *recordingReporter) OnFileStart(site.File) { r.starts.Add(1) }
+func (r *recordingReporter) OnFileStart(site.File)                  { r.starts.Add(1) }
 func (r *recordingReporter) OnFileProgress(site.File, int64, int64) { r.progressCalls.Add(1) }
 func (r *recordingReporter) OnFileComplete(_ site.File, err error) {
 	r.completes.Add(1)

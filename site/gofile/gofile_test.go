@@ -74,7 +74,7 @@ func TestResolve_Folder(t *testing.T) {
 			http.NotFound(w, r)
 			return
 		}
-		json.NewEncoder(w).Encode(contentsResponse{
+		if err := json.NewEncoder(w).Encode(contentsResponse{
 			Status: "ok",
 			Data: contentsData{
 				ID:   "testfolder",
@@ -92,7 +92,9 @@ func TestResolve_Folder(t *testing.T) {
 					},
 				},
 			},
-		})
+		}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -119,7 +121,9 @@ func TestResolve_Folder(t *testing.T) {
 
 func TestResolve_NotFound(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(contentsResponse{Status: "error-notFound"})
+		if err := json.NewEncoder(w).Encode(contentsResponse{Status: "error-notFound"}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -135,7 +139,9 @@ func TestResolve_NotFound(t *testing.T) {
 
 func TestResolve_PasswordRequired(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(contentsResponse{Status: "error-passwordRequired"})
+		if err := json.NewEncoder(w).Encode(contentsResponse{Status: "error-passwordRequired"}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -153,15 +159,19 @@ func TestResolve_WithPassword(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pw := r.URL.Query().Get("password")
 		if pw == "" {
-			json.NewEncoder(w).Encode(contentsResponse{Status: "error-passwordRequired"})
+			if err := json.NewEncoder(w).Encode(contentsResponse{Status: "error-passwordRequired"}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 			return
 		}
 		// The browser client sends the password value directly.
 		if pw != "mypassword" {
-			json.NewEncoder(w).Encode(contentsResponse{Status: "error-passwordIncorrect"})
+			if err := json.NewEncoder(w).Encode(contentsResponse{Status: "error-passwordIncorrect"}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 			return
 		}
-		json.NewEncoder(w).Encode(contentsResponse{
+		if err := json.NewEncoder(w).Encode(contentsResponse{
 			Status: "ok",
 			Data: contentsData{
 				ID:   "locked",
@@ -171,7 +181,9 @@ func TestResolve_WithPassword(t *testing.T) {
 					"f1": {ID: "f1", Name: "secret.txt", Type: "file", Size: 100, Link: "https://store1.gofile.io/download/f1/secret.txt"},
 				},
 			},
-		})
+		}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -203,7 +215,9 @@ func TestResolve_RateLimited(t *testing.T) {
 
 func TestResolve_NotPremiumIsAuthRequired(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(contentsResponse{Status: "error-notPremium"})
+		if err := json.NewEncoder(w).Encode(contentsResponse{Status: "error-notPremium"}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -265,10 +279,12 @@ func TestCreateAccount(t *testing.T) {
 			http.NotFound(w, r)
 			return
 		}
-		json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"status": "ok",
 			"data":   map[string]any{"token": "newtoken123"},
-		})
+		}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 

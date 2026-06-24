@@ -103,7 +103,7 @@ func (e *Engine) Download(ctx context.Context, s site.Site, album *site.Album) e
 		})
 	}
 
-	g.Wait()
+	_ = g.Wait()
 	e.progress().OnAlbumComplete(*album, int(succeeded.Load()), int(failed.Load()))
 
 	if ctx.Err() != nil {
