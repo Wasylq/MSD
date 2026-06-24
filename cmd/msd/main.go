@@ -20,6 +20,7 @@ import (
 	_ "github.com/Wasylq/MSD/site/filester"
 	_ "github.com/Wasylq/MSD/site/gofile"
 	_ "github.com/Wasylq/MSD/site/pixeldrain"
+	_ "github.com/Wasylq/MSD/site/turbo"
 )
 
 var (
