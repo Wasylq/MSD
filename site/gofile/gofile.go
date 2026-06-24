@@ -179,7 +179,7 @@ func (g *Gofile) createAccount(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return "", fmt.Errorf("%w: account creation", site.ErrRateLimited)
@@ -237,7 +237,7 @@ func (g *Gofile) fetchContents(ctx context.Context, contentID, password string) 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return nil, fmt.Errorf("gofile: %w", site.ErrRateLimited)

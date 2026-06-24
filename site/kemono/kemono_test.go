@@ -72,17 +72,21 @@ func TestResolve(t *testing.T) {
 
 		switch r.URL.Path {
 		case "/api/v1/patreon/user/11111111/profile":
-			json.NewEncoder(w).Encode(profileResponse{
+			if err := json.NewEncoder(w).Encode(profileResponse{
 				ID:      "11111111",
 				Name:    "creator",
 				Service: "patreon",
-			})
+			}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 		case "/api/v1/patreon/user/11111111/posts":
 			if r.URL.Query().Get("o") != "0" {
-				json.NewEncoder(w).Encode([]postResponse{})
+				if err := json.NewEncoder(w).Encode([]postResponse{}); err != nil {
+					t.Fatalf("encode response: %v", err)
+				}
 				return
 			}
-			json.NewEncoder(w).Encode([]postResponse{
+			if err := json.NewEncoder(w).Encode([]postResponse{
 				{
 					ID:        "33333333",
 					User:      "11111111",
@@ -106,7 +110,9 @@ func TestResolve(t *testing.T) {
 					Published:   "2025-12-07T18:26:55",
 					Attachments: []kemonoFile{},
 				},
-			})
+			}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 		default:
 			http.NotFound(w, r)
 		}
@@ -167,9 +173,11 @@ func TestResolve_ThumbnailMode(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/patreon/user/11111111/profile":
-			json.NewEncoder(w).Encode(profileResponse{ID: "11111111", Name: "creator"})
+			if err := json.NewEncoder(w).Encode(profileResponse{ID: "11111111", Name: "creator"}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 		case "/api/v1/patreon/user/11111111/posts":
-			json.NewEncoder(w).Encode([]postResponse{
+			if err := json.NewEncoder(w).Encode([]postResponse{
 				{
 					ID:        "33333333",
 					Title:     "Sample",
@@ -178,7 +186,9 @@ func TestResolve_ThumbnailMode(t *testing.T) {
 						{Name: "Comic-sample.png", Path: "/9e/fa/hash.png"},
 					},
 				},
-			})
+			}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 		default:
 			http.NotFound(w, r)
 		}
@@ -241,9 +251,13 @@ func TestResolve_Empty(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/patreon/user/empty/profile":
-			json.NewEncoder(w).Encode(profileResponse{ID: "empty", Name: "empty"})
+			if err := json.NewEncoder(w).Encode(profileResponse{ID: "empty", Name: "empty"}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 		case "/api/v1/patreon/user/empty/posts":
-			json.NewEncoder(w).Encode([]postResponse{})
+			if err := json.NewEncoder(w).Encode([]postResponse{}); err != nil {
+				t.Fatalf("encode response: %v", err)
+			}
 		default:
 			http.NotFound(w, r)
 		}

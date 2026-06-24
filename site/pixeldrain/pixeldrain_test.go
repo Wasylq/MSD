@@ -57,7 +57,9 @@ func TestResolve(t *testing.T) {
 			http.NotFound(w, r)
 			return
 		}
-		json.NewEncoder(w).Encode(resp)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -136,7 +138,9 @@ func TestResolve_EmptyAlbum(t *testing.T) {
 	}
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(resp)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -156,11 +160,13 @@ func TestResolveFile(t *testing.T) {
 			http.NotFound(w, r)
 			return
 		}
-		json.NewEncoder(w).Encode(fileResponse{
+		if err := json.NewEncoder(w).Encode(fileResponse{
 			ID:   "singlefile",
 			Name: "document.pdf",
 			Size: 4096,
-		})
+		}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
 	}))
 	defer ts.Close()
 

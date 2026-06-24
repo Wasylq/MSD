@@ -81,7 +81,7 @@ func (b *Bunkr) resolveAlbum(ctx context.Context, id string) (*site.Album, error
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -138,7 +138,7 @@ func (b *Bunkr) resolveFile(ctx context.Context, kind, slug string) (*site.Album
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -366,7 +366,7 @@ func (b *Bunkr) bridge(ctx context.Context, id string) (*bridgeResponse, error) 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -423,7 +423,7 @@ func (b *Bunkr) sign(ctx context.Context, mediaURL *url.URL) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:

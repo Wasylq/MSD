@@ -73,7 +73,7 @@ func (e *Engine) doDownload(ctx context.Context, s site.Site, file site.File, de
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	log.Printf("download response: %s: %d %s", file.Name, resp.StatusCode, resp.Status)
 
 	switch resp.StatusCode {
@@ -82,7 +82,9 @@ func (e *Engine) doDownload(ctx context.Context, s site.Site, file site.File, de
 	case http.StatusPartialContent:
 		// resume successful, offset stays
 	case http.StatusRequestedRangeNotSatisfiable:
-		os.Remove(partPath)
+		if err := os.Remove(partPath); err != nil && !os.IsNotExist(err) {
+			return err
+		}
 		return errRangeReset
 	case http.StatusTooManyRequests:
 		return site.ErrRateLimited
@@ -105,7 +107,12 @@ func (e *Engine) doDownload(ctx context.Context, s site.Site, file site.File, de
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	closed := false
+	defer func() {
+		if !closed {
+			_ = f.Close()
+		}
+	}()
 
 	written, err := e.copyWithProgress(f, resp.Body, file, offset)
 	if err != nil {
@@ -122,6 +129,7 @@ func (e *Engine) doDownload(ctx context.Context, s site.Site, file site.File, de
 	if err := f.Close(); err != nil {
 		return err
 	}
+	closed = true
 
 	return os.Rename(partPath, destPath)
 }

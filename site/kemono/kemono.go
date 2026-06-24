@@ -125,7 +125,7 @@ func (k *Kemono) getJSON(ctx context.Context, baseURL, apiPath string, dest any)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:

@@ -50,7 +50,7 @@ func (p *progressReporter) OnFileProgress(file site.File, downloaded, total int6
 	if bar == nil {
 		return
 	}
-	bar.Set64(downloaded)
+	_ = bar.Set64(downloaded)
 }
 
 func (p *progressReporter) OnFileComplete(file site.File, err error) {
@@ -64,10 +64,10 @@ func (p *progressReporter) OnFileComplete(file site.File, err error) {
 
 	if err != nil {
 		bar.Describe(truncateName(file.Name, 40) + " FAILED")
-		bar.Finish()
+		_ = bar.Finish()
 		fmt.Fprintf(os.Stderr, "%s: %v\n", file.Name, err)
 	} else {
-		bar.Finish()
+		_ = bar.Finish()
 	}
 }
 
@@ -79,7 +79,7 @@ func (p *progressReporter) Close() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	for _, bar := range p.bars {
-		bar.Finish()
+		_ = bar.Finish()
 	}
 }
 

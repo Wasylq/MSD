@@ -52,7 +52,7 @@ func (p *Pixeldrain) resolveList(ctx context.Context, id string) (*site.Album, e
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if err := checkStatus(resp.StatusCode, "list", id); err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (p *Pixeldrain) resolveFile(ctx context.Context, id string) (*site.Album, e
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if err := checkStatus(resp.StatusCode, "file", id); err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (p *Pixeldrain) DownloadRequest(_ context.Context, file site.File) (*site.D
 	}, nil
 }
 
-func (p *Pixeldrain) DefaultConcurrency() int            { return 5 }
+func (p *Pixeldrain) DefaultConcurrency() int             { return 5 }
 func (p *Pixeldrain) DefaultResolveDelay() time.Duration  { return 0 }
 func (p *Pixeldrain) DefaultDownloadDelay() time.Duration { return 0 }
 
