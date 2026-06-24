@@ -87,15 +87,6 @@ Kemono/Pawchive filenames use:
 YYYY-MM-DD - Post Title - PostID - NN - OriginalFilename.ext
 ```
 
-Example:
-
-```text
-downloads/kemono-patreon-creator/
-  2026-06-18 - Sample Post - 22222222 - 01 - Sample1.png
-  2026-06-18 - Sample Post - 22222222 - 02 - Sample2.png
-  post-links.txt
-```
-
 Downloads are written to `.part` files first, then renamed when complete. If a complete file already exists, MSD skips it.
 
 ## Configuration
