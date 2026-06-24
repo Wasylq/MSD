@@ -10,6 +10,7 @@ MSD is a multi-site downloader for public albums and creator archives. It resolv
 | Filester | `https://filester.me/f/<slug>` | HTML pagination plus short-lived CDN links. |
 | Gofile | `https://gofile.io/d/<id>` | Guest access may be IP-blocked or rate-limited; use `MSD_GOFILE_TOKEN` or `GOFILE_TOKEN`. |
 | Kemono/Pawchive | `https://kemono.cr/<service>/user/<id>`, `https://pawchive.st/<service>/user/<id>` | Writes `post-links.txt` beside downloaded files. |
+| Turbo | `https://turbo.cr/a/<id>`, `https://turbo.cr/d/<id>` | Public albums and single files with short-lived CDN links. |
 
 ## Build
 
