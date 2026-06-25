@@ -14,6 +14,15 @@ type Config struct {
 	Concurrency  int           `yaml:"concurrency"`
 	RequestDelay time.Duration `yaml:"request_delay"`
 	NoResume     bool          `yaml:"no_resume"`
+	Sites        SitesConfig   `yaml:"sites"`
+}
+
+type SitesConfig struct {
+	Gofile GofileConfig `yaml:"gofile"`
+}
+
+type GofileConfig struct {
+	AccountToken string `yaml:"account_token"`
 }
 
 func defaults() Config {
@@ -45,6 +54,11 @@ func applyEnv(cfg *Config) {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			cfg.Concurrency = n
 		}
+	}
+	if v := os.Getenv("MSD_GOFILE_TOKEN"); v != "" {
+		cfg.Sites.Gofile.AccountToken = v
+	} else if v := os.Getenv("GOFILE_TOKEN"); v != "" {
+		cfg.Sites.Gofile.AccountToken = v
 	}
 }
 

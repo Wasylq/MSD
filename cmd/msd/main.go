@@ -15,12 +15,12 @@ import (
 	"github.com/Wasylq/MSD/engine"
 	"github.com/Wasylq/MSD/internal/config"
 	"github.com/Wasylq/MSD/site"
+	sitegofile "github.com/Wasylq/MSD/site/gofile"
 	sitekemono "github.com/Wasylq/MSD/site/kemono"
 
 	_ "github.com/Wasylq/MSD/site/bunkr"
 	_ "github.com/Wasylq/MSD/site/coomerfans"
 	_ "github.com/Wasylq/MSD/site/filester"
-	_ "github.com/Wasylq/MSD/site/gofile"
 	_ "github.com/Wasylq/MSD/site/pixeldrain"
 	_ "github.com/Wasylq/MSD/site/turbo"
 )
@@ -125,6 +125,7 @@ func processURL(ctx context.Context, cfg *config.Config, url, password string, d
 	if s == nil {
 		return fmt.Errorf("no site handler matches URL: %s", url)
 	}
+	applySiteConfig(s, cfg)
 	if k, ok := s.(*sitekemono.Kemono); ok && kemonoThumbnails {
 		k.UseThumbnails = true
 		log.Printf("kemono thumbnail mode enabled")
@@ -161,6 +162,15 @@ func processURL(ctx context.Context, cfg *config.Config, url, password string, d
 	}
 
 	return e.Download(ctx, s, album)
+}
+
+func applySiteConfig(s site.Site, cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+	if g, ok := s.(*sitegofile.Gofile); ok {
+		g.SetAccountToken(cfg.Sites.Gofile.AccountToken)
+	}
 }
 
 func cliRetryPolicy() engine.RetryPolicy {

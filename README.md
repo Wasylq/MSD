@@ -66,6 +66,14 @@ Use a Gofile account token when guest access is blocked or the content requires 
 MSD_GOFILE_TOKEN='your-token' msd 'https://gofile.io/d/<id>'
 ```
 
+Or place it in your config file:
+
+```yaml
+sites:
+  gofile:
+    account_token: your-token
+```
+
 Download Kemono/Pawchive thumbnails instead of full attachment files:
 
 ```bash
@@ -117,6 +125,14 @@ Supported environment variables:
 | `MSD_CONCURRENCY` | Default concurrent download count. |
 | `MSD_GOFILE_TOKEN` | Gofile account token. |
 | `GOFILE_TOKEN` | Alternate Gofile account token name. |
+
+Site credentials can also be set in `config.yaml`:
+
+```yaml
+sites:
+  gofile:
+    account_token: your-token
+```
 
 ## Tests
 

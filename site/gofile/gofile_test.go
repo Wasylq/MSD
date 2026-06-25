@@ -310,6 +310,19 @@ func TestEnsureAccount_UsesEnvToken(t *testing.T) {
 	}
 }
 
+func TestSetAccountToken(t *testing.T) {
+	g := &Gofile{}
+	g.SetAccountToken(" configured-token ")
+	if g.accountToken != "configured-token" {
+		t.Errorf("accountToken = %q, want configured-token", g.accountToken)
+	}
+
+	g.SetAccountToken(" ")
+	if g.accountToken != "configured-token" {
+		t.Errorf("blank token should not clear accountToken, got %q", g.accountToken)
+	}
+}
+
 func TestName(t *testing.T) {
 	g := &Gofile{}
 	if g.Name() != "gofile" {

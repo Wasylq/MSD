@@ -45,6 +45,16 @@ func (g *Gofile) Match(rawURL string) bool {
 	return err == nil
 }
 
+func (g *Gofile) SetAccountToken(token string) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.accountToken = token
+}
+
 func (g *Gofile) Resolve(ctx context.Context, rawURL string, password string) (*site.Album, error) {
 	contentID, err := parseContentID(rawURL)
 	if err != nil {
