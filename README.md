@@ -1,34 +1,158 @@
-# MSD
+# MSD - Multi Site Downloader
 
-MSD is a multi-site downloader for public albums and creator archives. It resolves a supported URL into a file list, then downloads files concurrently with resume support into an organized output directory.
+[![CI](https://github.com/Wasylq/MSD/actions/workflows/ci.yml/badge.svg)](https://github.com/Wasylq/MSD/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Wasylq/MSD)](https://goreportcard.com/report/github.com/Wasylq/MSD)
+
+MSD resolves supported album, folder, creator, and post URLs into downloadable files, then downloads them concurrently with resume support. It is meant for public links first, while still allowing optional site credentials when a site blocks guest access or requires an account token.
 
 ## Supported Sites
 
 | Site | URL shape | Notes |
 |---|---|---|
-| Bunkr | `https://bunkr.cr/a/<id>`, `https://bunkr.cr/f/<id>` | Public albums and single files with short-lived CDN links. |
-| CoomerFans | `https://coomerfans.com/u/<service>/<id>/<name>`, `https://coomerfans.com/p/<post>/<id>/<service>` | Creator pages and single posts. Writes `post-links.txt` beside downloaded files. |
-| Pixeldrain | `https://pixeldrain.com/l/<id>` | Public lists. |
-| Filester | `https://filester.me/f/<slug>` | HTML pagination plus short-lived CDN links. |
-| Gofile | `https://gofile.io/d/<id>` | Guest access may be IP-blocked or rate-limited; use `MSD_GOFILE_TOKEN` or `GOFILE_TOKEN`. |
-| Kemono/Pawchive | `https://kemono.cr/<service>/user/<id>`, `https://pawchive.st/<service>/user/<id>` | Writes `post-links.txt` beside downloaded files. |
-| Turbo | `https://turbo.cr/a/<id>`, `https://turbo.cr/d/<id>` | Public albums and single files with short-lived CDN links. |
+| Bunkr | `https://bunkr.cr/a/<id>`, `https://bunkr.cr/f/<id>` | Public albums and single files with signed CDN links. |
+| CoomerFans | `https://coomerfans.com/u/<service>/<id>/<name>`, `https://coomerfans.com/p/<post>/<id>/<service>` | Creator pages and single posts. Writes `post-links.txt`. |
+| Filester | `https://filester.me/f/<slug>` | Public folders with HTML pagination plus generated CDN links. |
+| Gofile | `https://gofile.io/d/<id>` | Guest mode by default. Uses a configured token if provided. |
+| Kemono/Pawchive | `https://kemono.cr/<service>/user/<id>`, `https://pawchive.st/<service>/user/<id>` | Creator archives. Writes `post-links.txt`. |
+| Pixeldrain | `https://pixeldrain.com/l/<id>`, `https://pixeldrain.com/u/<id>` | Public lists and single files. |
+| Turbo | `https://turbo.cr/a/<id>`, `https://turbo.cr/d/<id>` | Public albums and single files with signed CDN links. |
 
-## Build
+See [docs/sites.md](docs/sites.md) for per-site behavior, limits, and authentication notes.
+
+## Install
+
+Pick one install route. Pre-built release binaries are simplest, packages are best for system installs, Docker is useful for isolated runs, and source builds are best for development.
+
+### Option 1: pre-built binary
+
+Download the archive for your platform from the [latest release](https://github.com/Wasylq/MSD/releases/latest), extract it, and put `msd` on your `PATH`.
+
+Asset names follow this pattern:
+
+```text
+msd-<version>-<os>-<arch>.tar.gz
+msd-<version>-windows-amd64.zip
+```
+
+Release builds currently target:
+
+| OS | Architectures |
+|---|---|
+| Linux | `amd64`, `arm64` |
+| macOS | `amd64`, `arm64` |
+| Windows | `amd64` |
+
+Linux example:
 
 ```bash
+VERSION=$(curl -sIL -o /dev/null -w '%{url_effective}' https://github.com/Wasylq/MSD/releases/latest | sed 's|.*/||')
+ARCH=amd64
+
+curl -LO "https://github.com/Wasylq/MSD/releases/download/${VERSION}/msd-${VERSION}-linux-${ARCH}.tar.gz"
+tar xzf "msd-${VERSION}-linux-${ARCH}.tar.gz"
+sudo install -m 0755 msd /usr/local/bin/msd
+msd --version
+```
+
+macOS example:
+
+```bash
+VERSION=$(curl -sIL -o /dev/null -w '%{url_effective}' https://github.com/Wasylq/MSD/releases/latest | sed 's|.*/||')
+ARCH=arm64    # use amd64 for Intel Macs
+
+curl -LO "https://github.com/Wasylq/MSD/releases/download/${VERSION}/msd-${VERSION}-darwin-${ARCH}.tar.gz"
+tar xzf "msd-${VERSION}-darwin-${ARCH}.tar.gz"
+sudo install -m 0755 msd /usr/local/bin/msd
+msd --version
+```
+
+Windows PowerShell example:
+
+```powershell
+$Version = (Invoke-RestMethod -Uri "https://api.github.com/repos/Wasylq/MSD/releases/latest").tag_name
+
+Invoke-WebRequest -Uri "https://github.com/Wasylq/MSD/releases/download/$Version/msd-$Version-windows-amd64.zip" -OutFile msd.zip
+Expand-Archive -Path msd.zip -DestinationPath .
+
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\bin" | Out-Null
+Move-Item -Force msd.exe "$env:USERPROFILE\bin\msd.exe"
+[Environment]::SetEnvironmentVariable("Path", "$env:Path;$env:USERPROFILE\bin", "User")
+```
+
+Restart the shell after changing `PATH`, then run:
+
+```powershell
+msd --version
+```
+
+### Option 2: Linux packages
+
+Each tagged release publishes `.deb` and `.rpm` packages.
+
+```bash
+TAG=$(curl -sIL -o /dev/null -w '%{url_effective}' https://github.com/Wasylq/MSD/releases/latest | sed 's|.*/||')
+VERSION=${TAG#v}
+ARCH=amd64
+
+# Debian / Ubuntu
+curl -LO "https://github.com/Wasylq/MSD/releases/download/${TAG}/msd_${VERSION}_${ARCH}.deb"
+sudo dpkg -i "msd_${VERSION}_${ARCH}.deb"
+
+# Fedora / RHEL
+curl -LO "https://github.com/Wasylq/MSD/releases/download/${TAG}/msd-${VERSION}-1.x86_64.rpm"
+sudo rpm -i "msd-${VERSION}-1.x86_64.rpm"
+```
+
+Arch Linux:
+
+```bash
+yay -S msd
+```
+
+### Option 3: Docker
+
+```bash
+docker pull ghcr.io/wasylq/msd:latest
+docker run --rm ghcr.io/wasylq/msd:latest --help
+```
+
+For real downloads, mount an output directory:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$PWD/downloads:/data" \
+  -w /data \
+  ghcr.io/wasylq/msd:latest \
+  'https://pixeldrain.com/l/<id>'
+```
+
+See [docs/docker.md](docs/docker.md) for config mounts, credentials, image tags, and troubleshooting.
+
+### Option 4: build from source
+
+Requires Go 1.26.3 or newer, matching the `go` directive in [go.mod](go.mod).
+
+```bash
+git clone https://github.com/Wasylq/MSD
+cd MSD
 make build
+./msd --version
 ```
 
-The binary is written to `./msd`.
-
-For development:
+Or install directly:
 
 ```bash
-go run ./cmd/msd --help
+go install github.com/Wasylq/MSD/cmd/msd@latest
 ```
 
-## Usage
+## Quick Start
+
+Preview what would be downloaded:
+
+```bash
+msd --dry-run 'https://pixeldrain.com/l/<id>'
+```
 
 Download into the current directory:
 
@@ -42,16 +166,12 @@ Choose an output directory:
 msd -o downloads 'https://pawchive.st/patreon/user/11111111'
 ```
 
-Preview files without downloading:
-
-```bash
-msd --dry-run 'https://pawchive.st/patreon/user/11111111'
-```
-
 Download multiple URLs in one run:
 
 ```bash
-msd -o downloads 'https://pixeldrain.com/l/<id>' 'https://filester.me/f/<slug>'
+msd -o downloads \
+  'https://pixeldrain.com/l/<id>' \
+  'https://filester.me/f/<slug>'
 ```
 
 Use a password for protected albums:
@@ -60,13 +180,13 @@ Use a password for protected albums:
 msd --password 'album-password' 'https://gofile.io/d/<id>'
 ```
 
-Use a Gofile account token when guest access is blocked or the content requires an account:
+Use a Gofile token when available:
 
 ```bash
 MSD_GOFILE_TOKEN='your-token' msd 'https://gofile.io/d/<id>'
 ```
 
-Or place it in your config file:
+Or place it in `config.yaml`:
 
 ```yaml
 sites:
@@ -74,33 +194,26 @@ sites:
     account_token: your-token
 ```
 
-Download Kemono/Pawchive thumbnails instead of full attachment files:
-
-```bash
-msd --kemono-thumbnails 'https://pawchive.st/patreon/user/11111111'
-```
-
-Enable debug logging:
-
-```bash
-msd -d 'https://pixeldrain.com/l/<id>'
-```
+Keys are optional. MSD tries guest/no-key access first unless a token is provided. If a site rejects anonymous access, MSD reports an authentication or rate-limit error instead of requiring credentials up front.
 
 ## Output Layout
 
-Albums are saved under the configured output directory. If the site provides an album name, MSD creates a subdirectory with a sanitized version of that name.
-
-Kemono/Pawchive filenames use:
+Downloads go under the configured output directory. If the site provides an album/archive name, MSD creates a sanitized subdirectory:
 
 ```text
-YYYY-MM-DD - Post Title - PostID - NN - OriginalFilename.ext
+downloads/
+  kemono-patreon-creator/
+    2026-03-18 - Post Title - 33333333 - 01 - file.jpg
+    post-links.txt
 ```
 
-Downloads are written to `.part` files first, then renamed when complete. If a complete file already exists, MSD skips it.
+Files are written to `.part` paths first, then renamed after completion. Existing complete files are skipped. Existing partial files are resumed unless `--no-resume` is set.
 
-## Configuration
+For creator/archive sites that expose source posts, MSD writes `post-links.txt` beside the downloaded files.
 
-MSD loads configuration from:
+## Config File
+
+Optional YAML config lives at:
 
 | Platform | Path |
 |---|---|
@@ -108,7 +221,13 @@ MSD loads configuration from:
 | macOS | `~/Library/Application Support/msd/config.yaml` |
 | Windows | `%APPDATA%\msd\config.yaml` |
 
-See `config.example.yaml` for a commented template.
+Start from [config.example.yaml](config.example.yaml):
+
+```bash
+mkdir -p ~/.config/msd
+cp config.example.yaml ~/.config/msd/config.yaml
+chmod 600 ~/.config/msd/config.yaml
+```
 
 Precedence, highest first:
 
@@ -117,47 +236,41 @@ Precedence, highest first:
 3. Config file
 4. Built-in defaults
 
-Supported environment variables:
+See [docs/configuration.md](docs/configuration.md) for every config key and credential source.
 
-| Variable | Purpose |
+## Documentation
+
+| Document | Contents |
 |---|---|
-| `MSD_DOWNLOAD_DIR` | Default download directory. |
-| `MSD_CONCURRENCY` | Default concurrent download count. |
-| `MSD_GOFILE_TOKEN` | Gofile account token. |
-| `GOFILE_TOKEN` | Alternate Gofile account token name. |
+| [docs/usage.md](docs/usage.md) | CLI flags, examples, output behavior, and troubleshooting |
+| [docs/configuration.md](docs/configuration.md) | Config file reference, environment variables, credential precedence |
+| [docs/sites.md](docs/sites.md) | Supported sites, URL patterns, site-specific notes |
+| [docs/docker.md](docs/docker.md) | Docker image tags, volumes, config, credentials |
+| [docs/architecture.md](docs/architecture.md) | Internal design for contributors |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Development workflow and adding site handlers |
 
-Site credentials can also be set in `config.yaml`:
-
-```yaml
-sites:
-  gofile:
-    account_token: your-token
-```
-
-## Tests
-
-Unit tests:
+## Development
 
 ```bash
 make test
+make lint
 ```
 
-Live integration smoke tests:
+Live integration tests use real target sites and are intentionally manual:
 
 ```bash
 make smoke
-```
-
-Run one site smoke test:
-
-```bash
 make smoke-one SITE=pixeldrain
 ```
 
-Gofile live smoke tests require `MSD_GOFILE_TOKEN` or `GOFILE_TOKEN`.
+Gofile live smoke tests may require `MSD_GOFILE_TOKEN`, `GOFILE_TOKEN`, or `sites.gofile.account_token` depending on the network and content.
 
-Gofile may return `rate limited` or `authentication required` for anonymous requests from some networks. That usually means Gofile is blocking or throttling guest account creation for the current IP, not that URL parsing is broken.
+## Troubleshooting
 
-## Notes
+**No site handler matches URL**: check [docs/sites.md](docs/sites.md) for supported URL shapes.
 
-Sites change APIs, anti-bot rules, and rate limits. If a handler starts returning `site structure changed`, `rate limited`, or authentication errors, verify the URL in a browser and run with `-d` for request-level diagnostics.
+**Authentication required**: the URL may need a password, account token, premium account, or the site may be blocking guest access.
+
+**Rate limited**: wait and retry with lower concurrency or a longer request delay.
+
+**Site structure changed**: the target site changed its HTML/API. Run with `-d` and open an issue with the URL shape and error.

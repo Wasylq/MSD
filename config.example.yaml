@@ -1,32 +1,47 @@
 # MSD configuration file.
-# Place at: ~/.config/msd/config.yaml (Linux)
-#           ~/Library/Application Support/msd/config.yaml (macOS)
-#           %APPDATA%\msd\config.yaml (Windows)
 #
-# All values are optional — CLI flags and environment variables take precedence.
-
-# Default download directory. CLI: -o / --output. Env: MSD_DOWNLOAD_DIR.
-# download_dir: .
-
-# Default max concurrent downloads. CLI: -c / --concurrency. Env: MSD_CONCURRENCY.
-# Falls back to the site handler's default if not set (e.g. pixeldrain: 5).
-# concurrency: 5
-
-# Default delay between requests (Go duration string).
-# CLI: --request-delay. Falls back to site handler's default if not set.
-# request_delay: 0s
-
-# Don't attempt to resume partial (.part) downloads. CLI: --no-resume.
-# no_resume: false
-
-# Site credentials. Environment variables still take precedence over this file.
-# Keep this file private: chmod 600 ~/.config/msd/config.yaml
+# Copy this file to your platform config directory:
+#   Linux:    ~/.config/msd/config.yaml
+#   macOS:    ~/Library/Application Support/msd/config.yaml
+#   Windows:  %APPDATA%\msd\config.yaml
 #
-# sites:
-#   gofile:
-#     # Account token. Env override: MSD_GOFILE_TOKEN, then GOFILE_TOKEN.
-#     account_token: ""
+# All keys are optional. CLI flags and environment variables override this file.
+# If you store credentials here, keep the file private:
+#   chmod 600 ~/.config/msd/config.yaml
 
-# Site-specific CLI flags:
+# Default download directory.
+# CLI: --output / -o
+# Env: MSD_DOWNLOAD_DIR
+download_dir: "."
+
+# Max concurrent downloads.
+# 0 means "use the matched site's default".
+# CLI: --concurrency / -c
+# Env: MSD_CONCURRENCY
+concurrency: 0
+
+# Delay between download requests.
+# 0s means "use the matched site's default".
+# CLI: --request-delay
+request_delay: 0s
+
+# Disable resume from existing .part files.
+# CLI: --no-resume
+no_resume: false
+
+# Site-specific settings and optional credentials.
+sites:
+  gofile:
+    # Optional account token.
+    #
+    # MSD still tries guest/no-key access when this is empty. If set, the token
+    # is used before cached guest tokens or automatic account creation.
+    #
+    # Env overrides:
+    #   MSD_GOFILE_TOKEN
+    #   GOFILE_TOKEN
+    account_token: ""
+
+# Site-specific CLI flags that intentionally remain flags:
 #   --kemono-thumbnails   Download Kemono/Pawchive thumbnails instead of full
 #                         attachment files.
