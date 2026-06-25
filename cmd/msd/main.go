@@ -18,6 +18,7 @@ import (
 	sitekemono "github.com/Wasylq/MSD/site/kemono"
 
 	_ "github.com/Wasylq/MSD/site/bunkr"
+	_ "github.com/Wasylq/MSD/site/coomerfans"
 	_ "github.com/Wasylq/MSD/site/filester"
 	_ "github.com/Wasylq/MSD/site/gofile"
 	_ "github.com/Wasylq/MSD/site/pixeldrain"

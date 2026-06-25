@@ -7,6 +7,7 @@ MSD is a multi-site downloader for public albums and creator archives. It resolv
 | Site | URL shape | Notes |
 |---|---|---|
 | Bunkr | `https://bunkr.cr/a/<id>`, `https://bunkr.cr/f/<id>` | Public albums and single files with short-lived CDN links. |
+| CoomerFans | `https://coomerfans.com/u/<service>/<id>/<name>`, `https://coomerfans.com/p/<post>/<id>/<service>` | Creator pages and single posts. Writes `post-links.txt` beside downloaded files. |
 | Pixeldrain | `https://pixeldrain.com/l/<id>` | Public lists. |
 | Filester | `https://filester.me/f/<slug>` | HTML pagination plus short-lived CDN links. |
 | Gofile | `https://gofile.io/d/<id>` | Guest access may be IP-blocked or rate-limited; use `MSD_GOFILE_TOKEN` or `GOFILE_TOKEN`. |
