@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/Wasylq/MSD/actions/workflows/ci.yml/badge.svg)](https://github.com/Wasylq/MSD/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Wasylq/MSD)](https://goreportcard.com/report/github.com/Wasylq/MSD)
+[![codecov](https://codecov.io/gh/Wasylq/MSD/graph/badge.svg?token=JZM3FGDXL0)](https://codecov.io/gh/Wasylq/MSD)
 
 MSD resolves supported album, folder, creator, and post URLs into downloadable files, then downloads them concurrently with resume support. It is meant for public links first, while still allowing optional site credentials when a site blocks guest access or requires an account token.
 
