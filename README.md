@@ -200,7 +200,7 @@ Keys are optional. MSD tries guest/no-key access first unless a token is provide
 
 ## Output Layout
 
-Downloads go under the configured output directory. If the site provides an album/archive name, MSD creates a sanitized subdirectory:
+Downloads go under the configured output directory. By default, MSD uses the user's Downloads directory; `--output`, `MSD_DOWNLOAD_DIR`, or `download_dir` can override it. If the site provides an album/archive name, MSD creates a sanitized subdirectory:
 
 ```text
 downloads/
@@ -230,6 +230,8 @@ mkdir -p ~/.config/msd
 cp config.example.yaml ~/.config/msd/config.yaml
 chmod 600 ~/.config/msd/config.yaml
 ```
+
+`download_dir` supports `~`, `$HOME`, environment variables, and `${XDG_DOWNLOAD_DIR}` for the platform Downloads folder.
 
 Precedence, highest first:
 

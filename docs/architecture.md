@@ -86,7 +86,10 @@ The engine does not parse site HTML/API responses and does not know about site c
 
 ## Config Flow
 
-`internal/config` loads YAML from the platform config path, then applies environment overrides.
+`internal/config` starts with built-in defaults, including the user's Downloads
+directory, then loads YAML from the platform config path and applies environment
+overrides. Download paths support `~`, normal environment variables, and the
+special `${XDG_DOWNLOAD_DIR}` value.
 
 Current precedence:
 

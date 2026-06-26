@@ -9,10 +9,12 @@
 # If you store credentials here, keep the file private:
 #   chmod 600 ~/.config/msd/config.yaml
 
-# Default download directory.
+# Default download directory. ${XDG_DOWNLOAD_DIR} resolves to the user's
+# platform Downloads folder, including localized XDG user-dirs on Linux.
+# You can also use ~, $HOME, or another environment variable.
 # CLI: --output / -o
 # Env: MSD_DOWNLOAD_DIR
-download_dir: "."
+download_dir: "${XDG_DOWNLOAD_DIR}"
 
 # Max concurrent downloads.
 # 0 means "use the matched site's default".

@@ -78,7 +78,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if v, _ := cmd.Flags().GetString("output"); v != "" {
-		cfg.DownloadDir = v
+		cfg.DownloadDir = config.ExpandPath(v)
 	}
 	if v, _ := cmd.Flags().GetInt("concurrency"); v > 0 {
 		cfg.Concurrency = v

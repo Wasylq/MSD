@@ -32,7 +32,7 @@ Site credentials follow the same rule. A configured key is optional; MSD still t
 ## Full Example
 
 ```yaml
-download_dir: /srv/downloads/msd
+download_dir: ${XDG_DOWNLOAD_DIR}
 concurrency: 3
 request_delay: 1s
 no_resume: false
@@ -46,11 +46,16 @@ sites:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `download_dir` | string | `.` | Default output directory. CLI: `--output`. Env: `MSD_DOWNLOAD_DIR`. |
+| `download_dir` | string | user Downloads directory | Default output directory. CLI: `--output`. Env: `MSD_DOWNLOAD_DIR`. |
 | `concurrency` | int | site default | Max concurrent downloads. CLI: `--concurrency`. Env: `MSD_CONCURRENCY`. |
 | `request_delay` | duration | site default | Delay between download requests. CLI: `--request-delay`. |
 | `no_resume` | bool | false | Disable `.part` resume behavior. CLI: `--no-resume`. |
 | `sites.gofile.account_token` | string | empty | Optional Gofile account token. Env: `MSD_GOFILE_TOKEN`, `GOFILE_TOKEN`. |
+
+`download_dir` supports `~`, `$HOME`, normal environment variables, and the
+special `${XDG_DOWNLOAD_DIR}` variable. On Linux, `${XDG_DOWNLOAD_DIR}` reads
+`user-dirs.dirs` so localized Downloads folders are respected. If no XDG
+download directory is configured, MSD falls back to `~/Downloads`.
 
 Go duration strings are accepted for `request_delay`, for example:
 

@@ -15,7 +15,7 @@ Technical reference for running `msd`.
 
 | Flag | Type | Default | Description |
 |---|---|---|---|
-| `--output`, `-o` | string | `.` | Directory where downloads are written. |
+| `--output`, `-o` | string | user Downloads directory | Directory where downloads are written. Supports `~`, `$HOME`, environment variables, and `${XDG_DOWNLOAD_DIR}`. |
 | `--concurrency`, `-c` | int | site default | Max concurrent downloads. |
 | `--request-delay` | duration | site default | Delay between download requests, for example `500ms`, `2s`, `1m`. |
 | `--password` | string | empty | Password for sites that support password-protected folders. |
@@ -44,6 +44,12 @@ Download into a specific directory:
 
 ```bash
 msd -o /srv/downloads 'https://turbo.cr/a/<id>'
+```
+
+Use the user's platform Downloads directory explicitly:
+
+```bash
+msd -o '${XDG_DOWNLOAD_DIR}/msd' 'https://turbo.cr/a/<id>'
 ```
 
 Download several URLs:
@@ -99,6 +105,8 @@ downloads/
 ```
 
 When no album name is available, files are written directly under `--output`.
+If neither `--output` nor `download_dir` is set, MSD uses the user's Downloads
+directory, including localized XDG user-dirs on Linux.
 
 Filenames are sanitized for common filesystem restrictions:
 

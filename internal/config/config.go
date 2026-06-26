@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -27,7 +28,7 @@ type GofileConfig struct {
 
 func defaults() Config {
 	return Config{
-		DownloadDir: ".",
+		DownloadDir: defaultDownloadDir(),
 	}
 }
 
@@ -43,6 +44,7 @@ func Load() (*Config, error) {
 	}
 
 	applyEnv(&cfg)
+	cfg.DownloadDir = ExpandPath(cfg.DownloadDir)
 	return &cfg, nil
 }
 
@@ -68,4 +70,65 @@ func configPath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(dir, "msd", "config.yaml"), nil
+}
+
+func defaultDownloadDir() string {
+	if dir := xdgUserDir("XDG_DOWNLOAD_DIR"); dir != "" {
+		return dir
+	}
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		return filepath.Join(home, "Downloads")
+	}
+	return "."
+}
+
+func xdgUserDir(key string) string {
+	configHome := os.Getenv("XDG_CONFIG_HOME")
+	if configHome == "" {
+		home, err := os.UserHomeDir()
+		if err != nil || home == "" {
+			return ""
+		}
+		configHome = filepath.Join(home, ".config")
+	}
+
+	data, err := os.ReadFile(filepath.Join(configHome, "user-dirs.dirs"))
+	if err != nil {
+		return ""
+	}
+
+	prefix := key + "="
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		value := strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, prefix)), `"`)
+		return ExpandPath(value)
+	}
+	return ""
+}
+
+func ExpandPath(path string) string {
+	if path == "" {
+		return path
+	}
+
+	if path == "~" {
+		if home, err := os.UserHomeDir(); err == nil && home != "" {
+			return home
+		}
+	}
+	if strings.HasPrefix(path, "~/") {
+		if home, err := os.UserHomeDir(); err == nil && home != "" {
+			return filepath.Join(home, strings.TrimPrefix(path, "~/"))
+		}
+	}
+
+	return os.Expand(path, func(name string) string {
+		if name == "XDG_DOWNLOAD_DIR" {
+			return defaultDownloadDir()
+		}
+		return os.Getenv(name)
+	})
 }
