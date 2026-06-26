@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Wasylq/MSD/actions/workflows/ci.yml/badge.svg)](https://github.com/Wasylq/MSD/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Wasylq/MSD)](https://goreportcard.com/report/github.com/Wasylq/MSD)
-[![codecov](https://codecov.io/gh/Wasylq/MSD/graph/badge.svg?token=JZM3FGDXL0)](https://codecov.io/gh/Wasylq/MSD)
+[![codecov](https://codecov.io/gh/Wasylq/MSD/branch/master/graph/badge.svg?token=JZM3FGDXL0)](https://codecov.io/gh/Wasylq/MSD)
 
 MSD resolves supported album, folder, creator, and post URLs into downloadable files, then downloads them concurrently with resume support. It is meant for public links first, while still allowing optional site credentials when a site blocks guest access or requires an account token.
 
@@ -12,6 +12,7 @@ MSD resolves supported album, folder, creator, and post URLs into downloadable f
 |---|---|---|
 | Bunkr | `https://bunkr.cr/a/<id>`, `https://bunkr.cr/f/<id>` | Public albums and single files with signed CDN links. |
 | CoomerFans | `https://coomerfans.com/u/<service>/<id>/<name>`, `https://coomerfans.com/p/<post>/<id>/<service>` | Creator pages and single posts. Writes `post-links.txt`. |
+| Cyberdrop | `https://cyberdrop.cr/f/<id>` | Public single files with signed CDN links. |
 | Filester | `https://filester.me/f/<slug>` | Public folders with HTML pagination plus generated CDN links. |
 | Gofile | `https://gofile.io/d/<id>` | Guest mode by default. Uses a configured token if provided. |
 | Kemono/Pawchive | `https://kemono.cr/<service>/user/<id>`, `https://pawchive.st/<service>/user/<id>` | Creator archives. Writes `post-links.txt`. |

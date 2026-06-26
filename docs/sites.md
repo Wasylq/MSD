@@ -8,6 +8,7 @@ This page lists the URL patterns MSD currently recognizes and the important beha
 |---|---|---|
 | Bunkr | `bunkr` | `/a/<id>`, `/f/<id>`, `/i/<id>`, `/v/<id>` on supported Bunkr hosts |
 | CoomerFans | `coomerfans` | `/u/<service>/<id>/<name>`, `/p/<post>/<id>/<service>` |
+| Cyberdrop | `cyberdrop` | `/f/<id>` |
 | Filester | `filester` | `/f/<slug>` |
 | Gofile | `gofile` | `/d/<id>` |
 | Kemono/Pawchive | `kemono` | `/<service>/user/<id>` |
@@ -45,6 +46,20 @@ Notes:
 - Post URLs resolve the media from that single post.
 - Media links are taken from CoomerFans storage hosts.
 - `post-links.txt` is written for traceability.
+
+## Cyberdrop
+
+Example:
+
+```text
+https://cyberdrop.cr/f/<id>
+```
+
+Notes:
+
+- Resolves public single-file pages.
+- Uses Cyberdrop's file info API for filename and size.
+- Generates the final signed CDN URL right before download.
 
 ## Filester
 

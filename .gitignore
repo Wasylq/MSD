@@ -41,3 +41,5 @@ dist/
 # Editor/IDE
 .idea/
 .vscode/
+
+downloads/
