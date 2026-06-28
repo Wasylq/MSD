@@ -250,6 +250,7 @@ See [docs/configuration.md](docs/configuration.md) for every config key and cred
 | [docs/usage.md](docs/usage.md) | CLI flags, examples, output behavior, and troubleshooting |
 | [docs/configuration.md](docs/configuration.md) | Config file reference, environment variables, credential precedence |
 | [docs/sites.md](docs/sites.md) | Supported sites, URL patterns, site-specific notes |
+| [docs/background.md](docs/background.md) | Periodic background runs on Linux, macOS, and Windows |
 | [docs/docker.md](docs/docker.md) | Docker image tags, volumes, config, credentials |
 | [docs/architecture.md](docs/architecture.md) | Internal design for contributors |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development workflow and adding site handlers |
