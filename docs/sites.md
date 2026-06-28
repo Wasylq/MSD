@@ -14,6 +14,7 @@ This page lists the URL patterns MSD currently recognizes and the important beha
 | Instagram | `instagram` | `/<username>`, `/reel/<shortcode>` |
 | Kemono/Pawchive | `kemono` | `/<service>/user/<id>` |
 | Pixeldrain | `pixeldrain` | `/l/<id>`, `/u/<id>` |
+| Redgifs | `redgifs` | `/users/<username>`, `/niches/<slug>` |
 | Turbo | `turbo` | `/a/<id>`, `/d/<id>`, `/v/<id>` |
 
 ## Bunkr
@@ -157,6 +158,29 @@ Notes:
 
 - Resolves public lists and public single files.
 - No credentials are currently supported.
+
+## Redgifs
+
+Examples:
+
+```text
+https://www.redgifs.com/users/sweetiefox
+https://www.redgifs.com/niches/just-boobs
+```
+
+Notes:
+
+- Resolves public user and niche feeds through Redgifs' public API.
+- Uses a Redgifs temporary bearer token automatically.
+- Downloads the best video URL exposed by the API, preferring `hd`, then `sd`,
+  then `silent`.
+- Writes `post-links.txt`.
+
+Filename pattern:
+
+```text
+YYYYMMDD_username_id.ext
+```
 
 ## Turbo
 

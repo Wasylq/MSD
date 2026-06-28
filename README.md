@@ -18,6 +18,7 @@ MSD resolves supported album, folder, creator, and post URLs into downloadable f
 | Instagram | `https://www.instagram.com/<username>/`, `https://www.instagram.com/reel/<shortcode>/` | Public profile media and direct reels. Writes `post-links.txt`; profile filenames use `YYMMDD_N.ext`, reel filenames use `YYMMDD_reel_N.ext`. |
 | Kemono/Pawchive | `https://kemono.cr/<service>/user/<id>`, `https://pawchive.st/<service>/user/<id>` | Creator archives. Writes `post-links.txt`. |
 | Pixeldrain | `https://pixeldrain.com/l/<id>`, `https://pixeldrain.com/u/<id>` | Public lists and single files. |
+| Redgifs | `https://www.redgifs.com/users/<username>`, `https://www.redgifs.com/niches/<slug>` | Public user and niche feeds via Redgifs API. Writes `post-links.txt`; filenames use `YYYYMMDD_username_id.ext`. |
 | Turbo | `https://turbo.cr/a/<id>`, `https://turbo.cr/d/<id>` | Public albums and single files with signed CDN links. |
 
 See [docs/sites.md](docs/sites.md) for per-site behavior, limits, and authentication notes.
