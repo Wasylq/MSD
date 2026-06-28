@@ -22,6 +22,7 @@ import (
 	_ "github.com/Wasylq/MSD/site/coomerfans"
 	_ "github.com/Wasylq/MSD/site/cyberdrop"
 	_ "github.com/Wasylq/MSD/site/filester"
+	_ "github.com/Wasylq/MSD/site/instagram"
 	_ "github.com/Wasylq/MSD/site/pixeldrain"
 	_ "github.com/Wasylq/MSD/site/turbo"
 )
