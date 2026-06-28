@@ -11,7 +11,7 @@ This page lists the URL patterns MSD currently recognizes and the important beha
 | Cyberdrop | `cyberdrop` | `/f/<id>` |
 | Filester | `filester` | `/f/<slug>` |
 | Gofile | `gofile` | `/d/<id>` |
-| Instagram | `instagram` | `/<username>` |
+| Instagram | `instagram` | `/<username>`, `/reel/<shortcode>` |
 | Kemono/Pawchive | `kemono` | `/<service>/user/<id>` |
 | Pixeldrain | `pixeldrain` | `/l/<id>`, `/u/<id>` |
 | Turbo | `turbo` | `/a/<id>`, `/d/<id>`, `/v/<id>` |
@@ -104,11 +104,13 @@ Example:
 
 ```text
 https://www.instagram.com/salmahayek/
+https://www.instagram.com/reel/<shortcode>/
 ```
 
 Notes:
 
 - Resolves public profile posts from Instagram's web JSON endpoints.
+- Direct reel URLs resolve that reel only.
 - Private profiles return an authentication-required error.
 - Writes `post-links.txt`.
 - Downloaded files are placed under the username album directory.
@@ -117,6 +119,7 @@ Filename pattern:
 
 ```text
 YYMMDD_N.ext
+YYMMDD_reel_N.ext
 ```
 
 ## Kemono / Pawchive

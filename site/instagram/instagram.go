@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,6 +24,7 @@ const (
 	timelineQueryID      = "7950326061742207"
 	webAppID             = "936619743392459"
 	userAgent            = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+	pageUserAgent        = "Mozilla/5.0"
 	timelinePageSize     = 12
 	maxTimelinePageCount = 200
 )
@@ -38,15 +42,22 @@ type Instagram struct {
 func (i *Instagram) Name() string { return "instagram" }
 
 func (i *Instagram) Match(rawURL string) bool {
-	return parseProfileURL(rawURL) != ""
+	return parseProfileURL(rawURL) != "" || parseReelURL(rawURL) != ""
 }
 
 func (i *Instagram) Resolve(ctx context.Context, rawURL string, _ string) (*site.Album, error) {
+	if shortcode := parseReelURL(rawURL); shortcode != "" {
+		return i.resolveReel(ctx, shortcode)
+	}
+
 	username := parseProfileURL(rawURL)
 	if username == "" {
 		return nil, fmt.Errorf("instagram: %w: %s", site.ErrNotFound, rawURL)
 	}
+	return i.resolveProfile(ctx, username)
+}
 
+func (i *Instagram) resolveProfile(ctx context.Context, username string) (*site.Album, error) {
 	profile, err := i.fetchProfile(ctx, username)
 	if err != nil {
 		return nil, err
@@ -62,9 +73,7 @@ func (i *Instagram) Resolve(ctx context.Context, rawURL string, _ string) (*site
 		username = user.Username
 	}
 
-	i.mu.Lock()
-	i.links = make(map[string]string)
-	i.mu.Unlock()
+	i.resetLinks()
 
 	album := &site.Album{
 		ID:   user.ID,
@@ -95,45 +104,119 @@ func (i *Instagram) Resolve(ctx context.Context, rawURL string, _ string) (*site
 	return album, nil
 }
 
-func (i *Instagram) addConnection(album *site.Album, conn mediaConnection, dateCounts map[string]int, seenPosts map[string]struct{}) {
+func (i *Instagram) resolveReel(ctx context.Context, shortcode string) (*site.Album, error) {
+	username, err := i.fetchReelOwner(ctx, shortcode)
+	if err != nil {
+		return nil, err
+	}
+	profile, err := i.fetchProfile(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	if profile.Data.User == nil || profile.Data.User.ID == "" {
+		return nil, fmt.Errorf("instagram: %w: %s", site.ErrNotFound, username)
+	}
+	user := profile.Data.User
+	if user.IsPrivate {
+		return nil, fmt.Errorf("instagram: %w: private profile", site.ErrAuthRequired)
+	}
+	if user.Username != "" {
+		username = user.Username
+	}
+
+	i.resetLinks()
+
+	album := &site.Album{
+		ID:   user.ID,
+		Name: username,
+	}
+	dateCounts := make(map[string]int)
+	seenPosts := make(map[string]struct{})
+
+	conn := user.timeline()
+	found := i.addMatchingReel(album, conn, dateCounts, seenPosts, shortcode)
+	for page := 0; !found && conn.PageInfo.HasNextPage && conn.PageInfo.EndCursor != ""; page++ {
+		if page >= maxTimelinePageCount {
+			return nil, fmt.Errorf("instagram: %w: pagination exceeded %d pages", site.ErrSiteChanged, maxTimelinePageCount)
+		}
+		next, err := i.fetchTimelinePage(ctx, user.ID, conn.PageInfo.EndCursor)
+		if err != nil {
+			return nil, err
+		}
+		conn = next.Data.User.EdgeOwnerToTimelineMedia
+		found = i.addMatchingReel(album, conn, dateCounts, seenPosts, shortcode)
+	}
+	if !found {
+		return nil, fmt.Errorf("instagram: %w: reel %s was not found in %s", site.ErrNotFound, shortcode, username)
+	}
+	if len(album.Files) == 0 {
+		return nil, fmt.Errorf("instagram: %w: no downloadable files for reel %s", site.ErrNotFound, shortcode)
+	}
+	return album, nil
+}
+
+func (i *Instagram) addMatchingReel(album *site.Album, conn mediaConnection, dateCounts map[string]int, seenPosts map[string]struct{}, shortcode string) bool {
 	for _, edge := range conn.Edges {
-		post := edge.Node
-		if post.ID == "" {
-			continue
-		}
-		if _, ok := seenPosts[post.ID]; ok {
-			continue
-		}
-		seenPosts[post.ID] = struct{}{}
-
-		if post.Shortcode != "" {
-			album.PostLinks = append(album.PostLinks, i.baseURL()+"/p/"+post.Shortcode+"/")
-		}
-
-		date := postDate(post.timestamp())
-
-		media := post.mediaItems()
-		for index, item := range media {
-			link := item.downloadURL()
-			if link == "" {
-				continue
-			}
-			ext := item.extension()
-			dateCounts[date]++
-			id := post.ID + ":" + item.mediaID(strconv.Itoa(index+1))
-			name := fmt.Sprintf("%s_%d%s", date, dateCounts[date], ext)
-
-			i.mu.Lock()
-			i.links[id] = link
-			i.mu.Unlock()
-
-			album.Files = append(album.Files, site.File{
-				ID:   id,
-				Name: name,
-				Size: -1,
-			})
+		if edge.Node.shortcode() == shortcode {
+			i.addPost(album, edge.Node, dateCounts, seenPosts, "reel", "/reel/", shortcode)
+			return true
 		}
 	}
+	return false
+}
+
+func (i *Instagram) addConnection(album *site.Album, conn mediaConnection, dateCounts map[string]int, seenPosts map[string]struct{}) {
+	for _, edge := range conn.Edges {
+		i.addPost(album, edge.Node, dateCounts, seenPosts, "", "/p/", "")
+	}
+}
+
+func (i *Instagram) addPost(album *site.Album, post mediaNode, dateCounts map[string]int, seenPosts map[string]struct{}, nameMarker, linkPath, shortcodeFallback string) {
+	postID := post.mediaID(shortcodeFallback)
+	if postID == "" {
+		return
+	}
+	if _, ok := seenPosts[postID]; ok {
+		return
+	}
+	seenPosts[postID] = struct{}{}
+
+	shortcode := post.shortcode()
+	if shortcode == "" {
+		shortcode = shortcodeFallback
+	}
+	if shortcode != "" {
+		album.PostLinks = append(album.PostLinks, i.baseURL()+linkPath+shortcode+"/")
+	}
+
+	date := postDate(post.timestamp())
+	media := post.mediaItems()
+	for index, item := range media {
+		link := item.downloadURL()
+		if link == "" {
+			continue
+		}
+		ext := item.extension()
+		dateCounts[date]++
+		id := postID + ":" + item.mediaID(strconv.Itoa(index+1))
+		name := fileName(date, nameMarker, dateCounts[date], ext)
+
+		i.mu.Lock()
+		i.links[id] = link
+		i.mu.Unlock()
+
+		album.Files = append(album.Files, site.File{
+			ID:   id,
+			Name: name,
+			Size: -1,
+		})
+	}
+}
+
+func (i *Instagram) resetLinks() {
+	i.mu.Lock()
+	i.links = make(map[string]string)
+	i.mu.Unlock()
 }
 
 func (i *Instagram) fetchProfile(ctx context.Context, username string) (*profileResponse, error) {
@@ -224,6 +307,76 @@ func (i *Instagram) getJSON(ctx context.Context, apiURL string, dest any) error 
 	return nil
 }
 
+func (i *Instagram) fetchReelOwner(ctx context.Context, shortcode string) (string, error) {
+	pageURL := i.baseURL() + "/reel/" + url.PathEscape(shortcode) + "/"
+	page, err := i.getText(ctx, pageURL)
+	if err != nil {
+		return "", err
+	}
+	username := extractReelOwner(page, shortcode)
+	if username != "" {
+		return username, nil
+	}
+	ownerID := extractReelOwnerID(page)
+	if ownerID != "" {
+		return i.fetchUsernameByID(ctx, ownerID)
+	}
+	return "", fmt.Errorf("instagram: %w: missing reel owner for %s", site.ErrSiteChanged, shortcode)
+}
+
+func (i *Instagram) fetchUsernameByID(ctx context.Context, userID string) (string, error) {
+	u, err := url.Parse(i.baseURL() + "/api/v1/users/" + url.PathEscape(userID) + "/info/")
+	if err != nil {
+		return "", err
+	}
+
+	var result userInfoResponse
+	if err := i.getJSON(ctx, u.String(), &result); err != nil {
+		return "", err
+	}
+	if result.Status != "" && result.Status != "ok" {
+		return "", fmt.Errorf("instagram: API status %s", result.Status)
+	}
+	if result.User == nil || result.User.Username == "" {
+		return "", fmt.Errorf("instagram: %w: missing username for user %s", site.ErrSiteChanged, userID)
+	}
+	return result.User.Username, nil
+}
+
+func (i *Instagram) getText(ctx context.Context, pageURL string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", pageUserAgent)
+
+	resp, err := i.httpClient().Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusNotFound:
+		return "", fmt.Errorf("instagram: %w: %s", site.ErrNotFound, pageURL)
+	case http.StatusTooManyRequests:
+		return "", fmt.Errorf("instagram: %w", site.ErrRateLimited)
+	case http.StatusForbidden, http.StatusUnauthorized:
+		return "", fmt.Errorf("instagram: %w: page denied", site.ErrAuthRequired)
+	default:
+		if resp.StatusCode >= 400 {
+			return "", fmt.Errorf("instagram: unexpected status %d for %s", resp.StatusCode, pageURL)
+		}
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 32<<20))
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
 func (i *Instagram) DownloadRequest(_ context.Context, file site.File) (*site.DownloadRequest, error) {
 	i.mu.Lock()
 	link := i.links[file.ID]
@@ -259,15 +412,10 @@ func (i *Instagram) baseURL() string {
 }
 
 func parseProfileURL(rawURL string) string {
-	u, err := url.Parse(rawURL)
-	if err != nil || u.Scheme == "" || u.Host == "" {
+	parts, ok := instagramPathParts(rawURL)
+	if !ok {
 		return ""
 	}
-	host := strings.ToLower(u.Hostname())
-	if host != "instagram.com" && host != "www.instagram.com" {
-		return ""
-	}
-	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
 	if len(parts) != 1 || parts[0] == "" {
 		return ""
 	}
@@ -279,6 +427,82 @@ func parseProfileURL(rawURL string) string {
 		"about": {}, "accounts": {}, "api": {}, "developer": {}, "direct": {}, "explore": {}, "p": {}, "reel": {}, "reels": {}, "stories": {},
 	}
 	if _, ok := reserved[strings.ToLower(username)]; ok {
+		return ""
+	}
+	return username
+}
+
+func parseReelURL(rawURL string) string {
+	parts, ok := instagramPathParts(rawURL)
+	if !ok {
+		return ""
+	}
+	if len(parts) != 2 || (strings.ToLower(parts[0]) != "reel" && strings.ToLower(parts[0]) != "reels") || parts[1] == "" {
+		return ""
+	}
+	shortcode, err := url.PathUnescape(parts[1])
+	if err != nil {
+		return ""
+	}
+	return shortcode
+}
+
+func instagramPathParts(rawURL string) ([]string, bool) {
+	u, err := url.Parse(rawURL)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return nil, false
+	}
+	host := strings.ToLower(u.Hostname())
+	if host != "instagram.com" && host != "www.instagram.com" {
+		return nil, false
+	}
+	return strings.Split(strings.Trim(u.Path, "/"), "/"), true
+}
+
+func fileName(date, marker string, number int, ext string) string {
+	if marker != "" {
+		return fmt.Sprintf("%s_%s_%d%s", date, marker, number, ext)
+	}
+	return fmt.Sprintf("%s_%d%s", date, number, ext)
+}
+
+func extractReelOwner(page, shortcode string) string {
+	for _, re := range reelURLPatterns {
+		for _, match := range re.FindAllStringSubmatch(page, -1) {
+			if username := ownerFromReelURL(html.UnescapeString(match[1]), shortcode); username != "" {
+				return username
+			}
+		}
+	}
+	return ""
+}
+
+func extractReelOwnerID(page string) string {
+	match := reelOwnerIDPattern.FindStringSubmatch(page)
+	if len(match) < 2 {
+		return ""
+	}
+	return match[1]
+}
+
+var reelURLPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`<meta\s+[^>]*property=["']og:url["'][^>]*content=["']([^"']+)["']`),
+	regexp.MustCompile(`<meta\s+[^>]*content=["']([^"']+)["'][^>]*property=["']og:url["']`),
+}
+
+var reelOwnerIDPattern = regexp.MustCompile(`"owner_id":"([0-9]+)"`)
+
+func ownerFromReelURL(rawURL, shortcode string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) < 3 || strings.ToLower(parts[1]) != "reel" || parts[2] != shortcode {
+		return ""
+	}
+	username, err := url.PathUnescape(parts[0])
+	if err != nil {
 		return ""
 	}
 	return username
@@ -302,6 +526,15 @@ type timelineResponse struct {
 	Data struct {
 		User *userResponse `json:"user"`
 	} `json:"data"`
+	Status string `json:"status"`
+}
+
+type userInfoResponse struct {
+	User *struct {
+		ID       string `json:"id"`
+		PK       string `json:"pk"`
+		Username string `json:"username"`
+	} `json:"user"`
 	Status string `json:"status"`
 }
 
@@ -352,6 +585,12 @@ type mediaNode struct {
 	DisplayResources      []imageResource `json:"display_resources"`
 	ImageVersions2        imageVersions   `json:"image_versions2"`
 	VideoVersions         []imageResource `json:"video_versions"`
+	User                  *mediaUser      `json:"user"`
+}
+
+type mediaUser struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
 }
 
 type imageVersions struct {
@@ -435,6 +674,13 @@ func (m mediaNode) mediaID(fallback string) string {
 		return m.PK
 	}
 	return fallback
+}
+
+func (m mediaNode) shortcode() string {
+	if m.Shortcode != "" {
+		return m.Shortcode
+	}
+	return m.Code
 }
 
 func (m mediaNode) isVideo() bool {

@@ -15,7 +15,7 @@ MSD resolves supported album, folder, creator, and post URLs into downloadable f
 | Cyberdrop | `https://cyberdrop.cr/f/<id>` | Public single files with signed CDN links. |
 | Filester | `https://filester.me/f/<slug>` | Public folders with HTML pagination plus generated CDN links. |
 | Gofile | `https://gofile.io/d/<id>` | Guest mode by default. Uses a configured token if provided. |
-| Instagram | `https://www.instagram.com/<username>/` | Public profile media. Writes `post-links.txt`; filenames use `YYMMDD_N.ext`. |
+| Instagram | `https://www.instagram.com/<username>/`, `https://www.instagram.com/reel/<shortcode>/` | Public profile media and direct reels. Writes `post-links.txt`; profile filenames use `YYMMDD_N.ext`, reel filenames use `YYMMDD_reel_N.ext`. |
 | Kemono/Pawchive | `https://kemono.cr/<service>/user/<id>`, `https://pawchive.st/<service>/user/<id>` | Creator archives. Writes `post-links.txt`. |
 | Pixeldrain | `https://pixeldrain.com/l/<id>`, `https://pixeldrain.com/u/<id>` | Public lists and single files. |
 | Turbo | `https://turbo.cr/a/<id>`, `https://turbo.cr/d/<id>` | Public albums and single files with signed CDN links. |

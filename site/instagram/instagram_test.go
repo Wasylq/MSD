@@ -22,7 +22,8 @@ func TestMatch(t *testing.T) {
 		{"https://www.instagram.com/salmahayek/", true},
 		{"https://instagram.com/salmahayek", true},
 		{"https://www.instagram.com/p/ABC123/", false},
-		{"https://www.instagram.com/reel/ABC123/", false},
+		{"https://www.instagram.com/reel/ABC123/", true},
+		{"https://www.instagram.com/reels/ABC123/", true},
 		{"https://example.com/salmahayek/", false},
 		{"not a url", false},
 	}
@@ -153,6 +154,85 @@ func TestResolve_ProfileWithPagination(t *testing.T) {
 		t.Fatalf("DownloadRequest: %v", err)
 	}
 	if req.URL != "https://cdn.example/video1.mp4" {
+		t.Errorf("download URL = %q", req.URL)
+	}
+}
+
+func TestResolve_Reel(t *testing.T) {
+	var sawReelPage, sawUserInfo, sawProfile bool
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/reel/REEL1/":
+			sawReelPage = true
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(`{"props":{"owner_id":"123","media_id":"456"},"params":{"shortcode":"REEL1"}}`))
+		case "/api/v1/users/123/info/":
+			sawUserInfo = true
+			writeJSON(t, w, map[string]any{
+				"status": "ok",
+				"user": map[string]any{
+					"id":       "123",
+					"username": "salmahayek",
+				},
+			})
+		case profileInfoPath:
+			sawProfile = true
+			if got := r.URL.Query().Get("username"); got != "salmahayek" {
+				t.Errorf("profile username = %q", got)
+			}
+			writeJSON(t, w, map[string]any{
+				"status": "ok",
+				"data": map[string]any{
+					"user": map[string]any{
+						"id":         "123",
+						"username":   "salmahayek",
+						"is_private": false,
+						"edge_owner_to_timeline_media": map[string]any{
+							"count": 2,
+							"page_info": map[string]any{
+								"has_next_page": false,
+								"end_cursor":    "",
+							},
+							"edges": []any{
+								mediaEdgeJSON("p1", "POST1", "GraphImage", 1704067200, "https://cdn.example/other.jpg", ""),
+								mediaEdgeJSON("r1", "REEL1", "GraphVideo", 1704153600, "", "https://cdn.example/reel.mp4"),
+							},
+						},
+					},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	i := &Instagram{HTTPClient: ts.Client(), BaseURL: ts.URL}
+	album, err := i.Resolve(context.Background(), "https://www.instagram.com/reel/REEL1/", "")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if !sawReelPage || !sawUserInfo || !sawProfile {
+		t.Fatal("expected reel page, user info, and profile endpoints to be called")
+	}
+	if album.Name != "salmahayek" {
+		t.Errorf("album Name = %q, want salmahayek", album.Name)
+	}
+	if len(album.Files) != 1 {
+		t.Fatalf("len(files) = %d, want 1", len(album.Files))
+	}
+	if album.Files[0].Name != "240102_reel_1.mp4" {
+		t.Errorf("file name = %q, want 240102_reel_1.mp4", album.Files[0].Name)
+	}
+	if len(album.PostLinks) != 1 || album.PostLinks[0] != ts.URL+"/reel/REEL1/" {
+		t.Errorf("PostLinks = %#v", album.PostLinks)
+	}
+
+	req, err := i.DownloadRequest(context.Background(), album.Files[0])
+	if err != nil {
+		t.Fatalf("DownloadRequest: %v", err)
+	}
+	if req.URL != "https://cdn.example/reel.mp4" {
 		t.Errorf("download URL = %q", req.URL)
 	}
 }
